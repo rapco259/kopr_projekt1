@@ -9,5 +9,6 @@ public class FileInfo implements Serializable{
 	public FileInfo(String fileName, long size) {
 		this.fileName = fileName;
 		this.size = size;
+		
 	}
 }
