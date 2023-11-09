@@ -1,69 +1,83 @@
 package sk.upjs.kopr.file_copy.server;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.net.Socket;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
 import sk.upjs.kopr.file_copy.FileInfo;
 import sk.upjs.kopr.file_copy.FileRequest;
 
 public class FileSendTask implements Runnable {
 
-	private static final int BLOCK_SIZE = 16384; // 16 kB
-	private final File fileToSend;
-	private final Socket socket;
-	
-	public FileSendTask(File fileToSend, Socket socket) throws FileNotFoundException {
-		this.fileToSend = fileToSend;
-		this.socket = socket;
-	}
+    private static final int BLOCK_SIZE = 16384; // 16 kB
+    private final BlockingQueue<File> fileToSend;
+    private final Socket socket;
+    private final ConcurrentHashMap<String, Long> dataFromClient;
+    private final ExecutorService executor;
 
-	@Override
-	public void run() {
-		try {
-			ObjectInputStream ois = null;
-			ObjectOutputStream oos = null;
-			try(RandomAccessFile raf = new RandomAccessFile(fileToSend, "r")) {
-				oos = new ObjectOutputStream(socket.getOutputStream());
-				ois = new ObjectInputStream(socket.getInputStream());
-				String command = ois.readUTF();
-				if (command.equals("info")) {
-					oos.writeObject(new FileInfo(fileToSend.getName(), fileToSend.length()));
-					oos.flush();
-					return;
-				}
-				if (! command.equals("file")) {
-					oos.writeUTF("unknown command");
-					return;
-				}
-				FileRequest fileRequest = (FileRequest) ois.readObject();
-				if (fileRequest.offset < 0 || fileRequest.length < 0 || fileRequest.offset + fileRequest.length > fileToSend.length()) {
-					throw new RuntimeException(socket.getInetAddress() + ":" + socket.getPort() + " : " 
-											   + fileRequest + " exceeds the file size " + fileToSend.length());
-				}
-				raf.seek(fileRequest.offset);
-				byte[] buffer = new byte[BLOCK_SIZE];
-				for (long send = 0; send < fileRequest.length; send += BLOCK_SIZE) {
-					if (ois.available() > 0) {
-						throw new RuntimeException(socket.getInetAddress() + ":" + socket.getPort() + " : "  
-												   + "Premature closing data stream after " + send + " bytes send for " + fileRequest);
-					}
-					int size = (int) Math.min(BLOCK_SIZE, fileRequest.length - send); 
-					raf.read(buffer, 0, size);
-					oos.write(buffer, 0, size);
-				}
-				oos.flush();
-				
-			} finally {
-				if (oos != null) oos.close();
-				if (ois != null) ois.close();
-				if (socket != null && socket.isConnected()) socket.close();
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+
+    public FileSendTask(ExecutorService executor, BlockingQueue<File> fileToSend, Socket socket, ConcurrentHashMap<String, Long> dataFromClient) throws FileNotFoundException {
+        this.fileToSend = fileToSend;
+        this.socket = socket;
+        this.dataFromClient = dataFromClient;
+        this.executor = executor;
+    }
+
+    @Override
+    public void run() {
+        // For each connection i have i will send one file through oos stream
+        File file;
+        while (!fileToSend.isEmpty()) {
+
+            try {
+                ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                file = fileToSend.take();
+                Long offset;
+                long len = file.length();
+                // zatial je toto 0, potom sa to zmeni podla dataFromClient
+                offset = 0L;
+
+                RandomAccessFile raf = new RandomAccessFile(file, "r");
+                // oos.writeLong(OFFSET);
+                raf.seek(offset);
+
+                long totalRead = offset;
+                int read;
+                long chunk;
+                byte[] buffer;
+                if (len - offset < BLOCK_SIZE) {
+                    chunk = len - offset;
+                    buffer = new byte[(int) chunk];
+                } else {
+                    chunk = BLOCK_SIZE;
+                    buffer = new byte[BLOCK_SIZE];
+                }
+
+                oos.writeLong(chunk);
+
+                while (totalRead < len && (read = raf.read(buffer, 0, (int) chunk)) >= 0) {
+                    totalRead += read;
+                    oos.write(buffer);
+                    if (len - totalRead < BLOCK_SIZE) {
+                        chunk = len - totalRead;
+                        buffer = new byte[(int) chunk];
+                    } else {
+                        chunk = BLOCK_SIZE;
+                        buffer = new byte[BLOCK_SIZE];
+                    }
+                    oos.writeLong(chunk);
+                    oos.flush();
+
+                }
+
+
+            } catch (InterruptedException | IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+
+    }
 }

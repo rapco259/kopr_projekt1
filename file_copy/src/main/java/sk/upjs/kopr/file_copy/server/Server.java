@@ -61,7 +61,7 @@ public class Server {
 				// ak je pradzna tak este som nic nestiahol zo servera
 				// ak nie je prazdna, tak uz som nieco stiahol zo servera
 
-
+				filesToSend = new LinkedBlockingQueue<>();
 				getAllFilesToSend(new File(Constants.FROM_DIR));
 				
 				System.out.println(filesToSend.size());
@@ -70,8 +70,10 @@ public class Server {
 
 				for (int i = 0; i < TPC_CONNECTIONS; i++) {
 					Socket connectionSocket = serverSocket.accept();
-					//FileSendTask fileSendTask = new FileSendTask(null, connectionSocket);
-					//executor.execute(fileSendTask);
+					// I need to create a fileSendTask for each connection socket and then in fileSendTask i need to
+					// take a file from queue and send it to client and then close the connection socket
+					FileSendTask fileSendTask = new FileSendTask(executor, filesToSend, connectionSocket, dataFromClient);
+					executor.execute(fileSendTask);
 				}
 
 				socket.close();
