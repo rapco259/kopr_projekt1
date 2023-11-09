@@ -3,35 +3,98 @@ package sk.upjs.kopr.file_copy.server;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import sk.upjs.kopr.file_copy.Constants;
+import sk.upjs.kopr.file_copy.FileSearcher;
 
 public class Server {
 
-	public static final int SERVER_PORT = 5000;
-	public static final File FILE_TO_SHARE = new File("___INSERT SOME cca 1GB FILE___");
-	
-	public static void main(String[] args) throws IOException {
-		ExecutorService executor = Executors.newCachedThreadPool();
-		if (! FILE_TO_SHARE.exists() || ! FILE_TO_SHARE.isFile()) {
-			throw new FileNotFoundException("No such file: " + FILE_TO_SHARE);
-		}
-		RandomAccessFile raf = new RandomAccessFile(FILE_TO_SHARE, "r");
-		raf.close();
-		try (ServerSocket ss = new ServerSocket(SERVER_PORT)) {
-			System.out.println("Sharing file " + FILE_TO_SHARE + " with size " + (FILE_TO_SHARE.length()/1_000_000) + " MB");
-			System.out.println("Server is running on port " + SERVER_PORT + " ...");
+	private BlockingQueue<File> filesToSend;
+	private int TPC_CONNECTIONS;
 
-			while(true) {
-				Socket socket = ss.accept();
-				FileSendTask fileSendTask = new FileSendTask(FILE_TO_SHARE, socket);
-				executor.submit(fileSendTask);
+	// PRECO STATIC ?????????????????????????
+	// vytvorenie lebo main je static
+
+	public Server() {
+		startConnection();
+	}
+
+	public static void main(String[] args) throws IOException {
+		new Server();
+	}
+
+	public void startConnection() {
+
+		System.out.println("Server sa spustil");
+
+		try (ServerSocket serverSocket = new ServerSocket(Constants.SERVER_PORT)) {
+			while (true) {
+				Socket socket = serverSocket.accept();
+				System.out.println("niekto sa napojil");
+				ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+				ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+				ConcurrentHashMap<String, Long> dataFromClient = null;
+
+				// read dir with searcher
+
+				// action od clienta, zatial mi to netreba
+				String startOrContinue = ois.readUTF();
+
+				TPC_CONNECTIONS = ois.readInt();
+
+				System.out.println(TPC_CONNECTIONS);
+				System.out.println(startOrContinue);
+
+				//dataFromClient = (ConcurrentHashMap<String, Long>) ois.readObject();
+
+				// prijmem mapu, bud je prazdna, alebo tam nieco je
+				// ak je pradzna tak este som nic nestiahol zo servera
+				// ak nie je prazdna, tak uz som nieco stiahol zo servera
+
+
+				getAllFilesToSend(new File(Constants.FROM_DIR));
+				
+				System.out.println(filesToSend.size());
+
+				ExecutorService executor = Executors.newCachedThreadPool();
+
+				for (int i = 0; i < TPC_CONNECTIONS; i++) {
+					Socket connectionSocket = serverSocket.accept();
+					//FileSendTask fileSendTask = new FileSendTask(null, connectionSocket);
+					//executor.execute(fileSendTask);
+				}
+
+				socket.close();
+
 			}
+
+		} catch (Exception e) {
+
 		}
+
+	}
+
+	public void getAllFilesToSend(File rootDir) {
+		File[] files = rootDir.listFiles();
+		System.out.println("mam files nejake " + files.length);
+
+		filesToSend = new LinkedBlockingQueue<>();
+
+		FileSearcher fileSearcher = new FileSearcher(rootDir, filesToSend);
 		
+		fileSearcher.run();
+		
+
 	}
 
 }

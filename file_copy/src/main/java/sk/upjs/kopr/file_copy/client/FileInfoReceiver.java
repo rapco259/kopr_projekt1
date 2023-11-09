@@ -8,6 +8,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import sk.upjs.kopr.file_copy.Constants;
 import sk.upjs.kopr.file_copy.FileInfo;
 import sk.upjs.kopr.file_copy.server.Server;
 
@@ -22,7 +23,7 @@ public class FileInfoReceiver {
 
 	public static FileInfo getLocalhostServerFileInfo() {
 		try {
-			FileInfoReceiver fir = new FileInfoReceiver("localhost", Server.SERVER_PORT);
+			FileInfoReceiver fir = new FileInfoReceiver("localhost", Constants.SERVER_PORT);
 			return fir.getFileInfo();
 		} catch (UnknownHostException e) {
 			return null;
