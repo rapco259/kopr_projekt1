@@ -6,6 +6,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
+import sk.upjs.kopr.file_copy.Constants;
 import sk.upjs.kopr.file_copy.FileInfo;
 import sk.upjs.kopr.file_copy.FileRequest;
 
@@ -15,69 +16,66 @@ public class FileSendTask implements Runnable {
     private final BlockingQueue<File> fileToSend;
     private final Socket socket;
     private final ConcurrentHashMap<String, Long> dataFromClient;
-    private final ExecutorService executor;
+    private long offset;
+    private File file;
+    private String fileName;
 
 
-    public FileSendTask(ExecutorService executor, BlockingQueue<File> fileToSend, Socket socket, ConcurrentHashMap<String, Long> dataFromClient) throws FileNotFoundException {
+    public FileSendTask(BlockingQueue<File> fileToSend, Socket socket, ConcurrentHashMap<String, Long> dataFromClient) throws FileNotFoundException {
         this.fileToSend = fileToSend;
         this.socket = socket;
         this.dataFromClient = dataFromClient;
-        this.executor = executor;
     }
 
     @Override
     public void run() {
         // For each connection i have i will send one file through oos stream
-        File file;
-        while (!fileToSend.isEmpty()) {
 
-            try {
-                ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-                file = fileToSend.take();
-                Long offset;
-                long len = file.length();
-                // zatial je toto 0, potom sa to zmeni podla dataFromClient
-                offset = 0L;
+        try {
+            file = fileToSend.take();
+            ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
 
+            while (!fileToSend.isEmpty()) {
+                fileName = file.getPath().substring(Constants.FROM_DIR.lastIndexOf('\\') + 1);
+
+                if(dataFromClient == null || !dataFromClient.containsKey(fileName)){
+                    offset = 0;
+                } else {
+                    offset = dataFromClient.get(fileName);
+                    if(offset == file.length()){
+                        file = fileToSend.take();
+                        continue;
+                    }
+                }
+
+                System.out.println("nacitavam subor: " + file.getPath());
+
+                long fileSize = file.length();
+                oos.writeUTF(fileName);
+                oos.writeLong(fileSize);
+                oos.flush();
+
+                byte[] buffer = new byte[BLOCK_SIZE];
                 RandomAccessFile raf = new RandomAccessFile(file, "r");
-                // oos.writeLong(OFFSET);
                 raf.seek(offset);
 
-                long totalRead = offset;
-                int read;
-                long chunk;
-                byte[] buffer;
-                if (len - offset < BLOCK_SIZE) {
-                    chunk = len - offset;
-                    buffer = new byte[(int) chunk];
-                } else {
-                    chunk = BLOCK_SIZE;
-                    buffer = new byte[BLOCK_SIZE];
-                }
-
-                oos.writeLong(chunk);
-
-                while (totalRead < len && (read = raf.read(buffer, 0, (int) chunk)) >= 0) {
-                    totalRead += read;
-                    oos.write(buffer);
-                    if (len - totalRead < BLOCK_SIZE) {
-                        chunk = len - totalRead;
-                        buffer = new byte[(int) chunk];
-                    } else {
-                        chunk = BLOCK_SIZE;
-                        buffer = new byte[BLOCK_SIZE];
+                while(offset < fileSize){
+                    if (fileSize - offset < buffer.length) {
+                        buffer = new byte[(int) (fileSize - offset)];
                     }
-                    oos.writeLong(chunk);
-                    oos.flush();
-
+                    offset += raf.read(buffer);
+                    oos.write(buffer);
                 }
+                System.out.println("posielam subor: " + file.getPath());
+                oos.flush();
+                raf.close();
 
-
-            } catch (InterruptedException | IOException e) {
-                throw new RuntimeException(e);
+                file = fileToSend.take();
             }
+
+
+        } catch (InterruptedException | IOException e) {
+            throw new RuntimeException(e);
         }
-
-
     }
 }

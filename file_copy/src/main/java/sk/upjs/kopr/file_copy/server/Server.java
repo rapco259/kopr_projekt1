@@ -72,7 +72,7 @@ public class Server {
 					Socket connectionSocket = serverSocket.accept();
 					// I need to create a fileSendTask for each connection socket and then in fileSendTask i need to
 					// take a file from queue and send it to client and then close the connection socket
-					FileSendTask fileSendTask = new FileSendTask(executor, filesToSend, connectionSocket, dataFromClient);
+					FileSendTask fileSendTask = new FileSendTask(filesToSend, connectionSocket, dataFromClient);
 					executor.execute(fileSendTask);
 				}
 
@@ -81,14 +81,12 @@ public class Server {
 			}
 
 		} catch (Exception e) {
-
+			e.printStackTrace();
 		}
-
 	}
-
 	public void getAllFilesToSend(File rootDir) {
 		File[] files = rootDir.listFiles();
-		System.out.println("mam files nejake " + files.length);
+		// System.out.println("mam files nejake " + files.length);
 
 		filesToSend = new LinkedBlockingQueue<>();
 
