@@ -29,6 +29,7 @@ public class FileSearcherClient {
             if (dir[i].isDirectory()) {
                 search(dir[i].listFiles());
             } else {
+                System.out.println("dir[i].getPath(): " + dir[i].getPath());
                 clientFiles.put(dir[i].getPath().substring(Constants.TO_DIR.lastIndexOf('\\') + 1), dir[i].length());
             }
         }

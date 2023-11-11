@@ -14,14 +14,12 @@ import sk.upjs.kopr.file_copy.client.Client;
 
 public class FileSendTask implements Runnable {
     //16384
-    private static final int BLOCK_SIZE = 64000;
     private final BlockingQueue<File> fileToSend;
     private final Socket socket;
     private final ConcurrentHashMap<String, Long> dataFromClient;
     private long offset;
     private File file;
     private String fileName;
-    private boolean isInterrup = false;
     private ObjectOutputStream oos;
     private final int TPC_CONNECTIONS;
 
@@ -43,15 +41,19 @@ public class FileSendTask implements Runnable {
 
             while (file != Constants.POISON_PILL) {
 
-
                 fileName = file.getPath().substring(Constants.FROM_DIR.lastIndexOf('\\') + 1);
 
+                System.out.println("fileName: " + fileName + "datafromclient: " + dataFromClient.toString());
+
                 if (dataFromClient == null || !dataFromClient.containsKey(fileName)) {
+                    System.out.println("tento subor este nemam: " + fileName);
                     offset = 0;
                 } else {
                     offset = dataFromClient.get(fileName);
+                    System.out.println("tento subor uz mam s offsetom: " + offset + " a jeho dlzka je " + file.length());
                     if (offset == file.length()) {
                         file = fileToSend.take();
+                        System.out.println("PRESKAKUJEM: " + fileName + " cez vlakno: " + Thread.currentThread().getName());
                         continue;
                     }
                 }
@@ -63,23 +65,28 @@ public class FileSendTask implements Runnable {
                 oos.writeLong(fileSize);
                 oos.flush();
 
-                byte[] buffer = new byte[BLOCK_SIZE];
+                byte[] buffer = new byte[Constants.BUFFER_SIZE];
                 RandomAccessFile raf = new RandomAccessFile(file, "r");
                 raf.seek(offset);
 
                 while (offset < fileSize) {
+                    System.out.println("offset: " + offset);
                     if (fileSize - offset < buffer.length) {
                         buffer = new byte[(int) (fileSize - offset)];
                     }
                     offset += raf.read(buffer);
+                    System.out.println("zvacsujem offset: " + offset);
                     oos.write(buffer);
+
                 }
                 System.out.println("posielam subor: " + fileName + " cez vlakno: " + Thread.currentThread().getName());
                 oos.flush();
                 raf.close();
-
                 file = fileToSend.take();
             }
+
+            //oos.writeUTF("poison.pill");
+            //socket.close();
 
             // tu bolo toto moje pod tym
             // chcem ukoncit vlakna a zavriet starter aspon
@@ -89,11 +96,12 @@ public class FileSendTask implements Runnable {
         } finally {
             try {
                 // moje
-                System.out.println("poslal som vsetky subory");
+                System.out.println("poslal som vsetky subory ktore som mal vo vlakne: " + Thread.currentThread().getName());
 
                 oos.writeUTF("poison.pill");
                 System.out.println("posielam poison.pill cez vlakno " + Thread.currentThread().getName());
                 oos.flush();
+
                 // moje
                 oos.close();
                 socket.close();
@@ -102,6 +110,7 @@ public class FileSendTask implements Runnable {
                 e.printStackTrace();
             }
         }
+
 
     }
 }

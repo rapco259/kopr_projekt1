@@ -1,6 +1,7 @@
 package sk.upjs.kopr.file_copy.client;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
@@ -19,13 +20,13 @@ public class Client extends Service<Boolean>{
 	public final int numberOfTpcConnections;
 	private ConcurrentHashMap<String, Long> dataFromClient;
 	private ExecutorService executor;
+	private Socket clientSocket;
 	
 	public Client(int numberOfTpcConnections) {
 		savedData();
 		this.executor = Executors.newFixedThreadPool(numberOfTpcConnections);
 		this.numberOfTpcConnections = numberOfTpcConnections;
 	}
-
 
 	public void savedData() {
 		dataFromClient = new ConcurrentHashMap<>();
@@ -66,7 +67,7 @@ public class Client extends Service<Boolean>{
 	public void createConnection() {
 
 		try {
-			Socket clientSocket = new Socket("localhost", Constants.SERVER_PORT);
+			clientSocket = new Socket("localhost", Constants.SERVER_PORT);
 			oos = new ObjectOutputStream(clientSocket.getOutputStream());
 			ois = new ObjectInputStream(clientSocket.getInputStream());
 			System.out.println("som napojeny");
@@ -76,7 +77,7 @@ public class Client extends Service<Boolean>{
 		}
 	}
 
-	public void connectToServer() {
+	public void connectToServer() throws IOException {
 		
 		for (int i = 0; i < numberOfTpcConnections; i++) {
 			
@@ -85,14 +86,13 @@ public class Client extends Service<Boolean>{
 				System.out.println("pripajam na server");
 				FileReceiveTask task = new FileReceiveTask(Constants.TO_DIR, socket, dataFromClient);
 				executor.execute(task);
-				
+
 			} catch (Exception e) {
 				// TODO: handle exception
 			}
 			
 		}
-		
-		
+		executor.shutdown();
+		clientSocket.close();
 	}
-
 }

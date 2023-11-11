@@ -37,6 +37,7 @@ public class Server {
 		System.out.println("Server sa spustil");
 
 		try (ServerSocket serverSocket = new ServerSocket(Constants.SERVER_PORT)) {
+			ExecutorService executor = Executors.newCachedThreadPool();
 			while (true) {
 				Socket socket = serverSocket.accept();
 				System.out.println("niekto sa napojil");
@@ -69,8 +70,6 @@ public class Server {
 				System.out.println("filesToSend: " + filesToSend);
 				
 				System.out.println("velkost filesToSend: " + filesToSend.size());
-
-				ExecutorService executor = Executors.newCachedThreadPool();
 
 				for (int i = 0; i < TPC_CONNECTIONS; i++) {
 					Socket connectionSocket = serverSocket.accept();

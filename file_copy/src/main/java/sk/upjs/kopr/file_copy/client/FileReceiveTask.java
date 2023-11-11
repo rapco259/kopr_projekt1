@@ -9,7 +9,6 @@ import sk.upjs.kopr.file_copy.Constants;
 import sk.upjs.kopr.file_copy.FileRequest;
 
 public class FileReceiveTask implements Runnable {
-    private static final int BUFFER_SIZE = 16384;
     private String TO_DIR;
     private Socket socket;
     private ConcurrentHashMap<String, Long> dataFromClient;
@@ -34,18 +33,24 @@ public class FileReceiveTask implements Runnable {
                 System.out.println("fileName: " + fileName);
 
                 if (fileName.equals(Constants.POISON_PILL.getName())) {
-                    System.out.println("POISON PILL, KONCIM CYKLUS");
+                    System.out.println("CLIENTOVE VLAKNO DOSTALO POISON PILL, KONCIM CYKLUS");
                     break;
                 }
 
                 File file = new File(TO_DIR + "\\" + fileName);
                 //System.out.println("file: " + file.getPath());
 
+//                System.out.println("dataFromClient: " + dataFromClient.toString());
+//                System.out.println("fileName: " + file.getAbsoluteFile());
+//                System.out.println("fileName: " + file.getAbsoluteFile().toString());
+//                System.out.println(file.getPath().substring(Constants.TO_DIR.lastIndexOf('\\') + 1));
 
-                if (!dataFromClient.containsKey(file.getName())) {
+                if (!dataFromClient.containsKey(file.getPath().substring(Constants.TO_DIR.lastIndexOf('\\') + 1))) {
                     offset = 0;
+                    System.out.println("tento subor este nemam: " + file.getName());
                 } else {
-                    offset = dataFromClient.get(file.getName());
+                    offset = dataFromClient.get(file.getPath().substring(Constants.TO_DIR.lastIndexOf('\\') + 1));
+                    System.out.println("tento subor uz mam s offsetom: " + offset + " a jeho dlzka je " + file.length());
                 }
 
                 File parent = file.getParentFile();
@@ -60,9 +65,8 @@ public class FileReceiveTask implements Runnable {
                 raf.setLength(fileSize);
                 //System.out.println("fileSize: " + fileSize);
 
-                byte[] receivedData = new byte[BUFFER_SIZE];
+                byte[] receivedData = new byte[Constants.BUFFER_SIZE];
                 raf.seek(offset); // offset
-
                 int readBytes = 0;
 
                 while (offset < fileSize) {
@@ -78,11 +82,18 @@ public class FileReceiveTask implements Runnable {
                     raf.seek(offset);
                     raf.write(receivedData, 0, readBytes);
                     offset += readBytes;
-
                 }
                 raf.close();
                 System.out.println("file: " + file.getPath() + " bol stiahnuty" + " cez vlakno: " + Thread.currentThread().getName());
                 // ulozit vsetko co uz mam
+
+                if (offset < fileSize) {
+                    dataFromClient.put(fileName, offset);
+                    break;
+                } else {
+                    dataFromClient.put(fileName, fileSize);
+
+                }
             }
             System.out.println("koniec cyklu, mam vsetko stiahnute, zatvaram socket");
 
@@ -90,6 +101,8 @@ public class FileReceiveTask implements Runnable {
             e.printStackTrace();
         } finally {
             try {
+                System.out.println("zatvaram socket V FILERECEIVETASK");
+                ois.close();
                 socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
