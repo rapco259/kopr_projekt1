@@ -53,51 +53,52 @@ public class Server {
 
 				TPC_CONNECTIONS = ois.readInt();
 
-				System.out.println(TPC_CONNECTIONS);
+				// dataFromClient is null ? dokoncit a pozriet ukoncovanie vlakien
 
 				// print out dataFromClient with files and their sizes
-				System.out.println(dataFromClient);
+				//dataFromClient.forEach((k, v) -> System.out.println("key: " + k + " value: " + v));
+
 
 				// prijmem mapu, bud je prazdna, alebo tam nieco je
 				// ak je pradzna tak este som nic nestiahol zo servera
 				// ak nie je prazdna, tak uz som nieco stiahol zo servera
 
-				filesToSend = new LinkedBlockingQueue<>();
+
 				getAllFilesToSend(new File(Constants.FROM_DIR));
+
+				System.out.println("filesToSend: " + filesToSend);
 				
-				System.out.println(filesToSend.size());
+				System.out.println("velkost filesToSend: " + filesToSend.size());
 
 				ExecutorService executor = Executors.newCachedThreadPool();
 
 				for (int i = 0; i < TPC_CONNECTIONS; i++) {
 					Socket connectionSocket = serverSocket.accept();
-					// I need to create a fileSendTask for each connection socket and then in fileSendTask i need to
-					// take a file from queue and send it to client and then close the connection socket
-					FileSendTask fileSendTask = new FileSendTask(filesToSend, connectionSocket, dataFromClient);
+					System.out.println("prijal som spojenie");
+					FileSendTask fileSendTask = new FileSendTask(filesToSend, connectionSocket, dataFromClient, TPC_CONNECTIONS);
 					executor.execute(fileSendTask);
 				}
-
-				socket.close();
-
 			}
 
-		} catch (Exception e) {
+		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
 	public void getAllFilesToSend(File rootDir) {
 		File[] files = rootDir.listFiles();
 		// System.out.println("mam files nejake " + files.length);
-
 		filesToSend = new LinkedBlockingQueue<>();
+
+		assert files != null;
+		if (files.length == 0) {
+			filesToSend.add(rootDir);
+		}
 
 		serverFiles = new ConcurrentHashMap<>();
 
-		FileSearcherServer fileSearcherServer = new FileSearcherServer(rootDir, filesToSend);
+		FileSearcherServer fileSearcherServer = new FileSearcherServer(rootDir, filesToSend, TPC_CONNECTIONS);
 		
 		fileSearcherServer.run();
-		
 
 	}
-
 }

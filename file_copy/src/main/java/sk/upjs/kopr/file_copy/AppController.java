@@ -36,7 +36,7 @@ public class AppController {
 	@FXML
 	private Label toDirLabel;
 	
-	private int numberOfTcpConnectionsInt;
+	public static int numberOfTcpConnectionsInt;
 
 	@FXML
 	void initialize() {
@@ -54,8 +54,7 @@ public class AppController {
 			e.printStackTrace();
 		}
 		
-		Client clientManager = new Client();
-		clientManager.setNumberOfTcpConnetions(numberOfTcpConnectionsInt);
+		Client clientManager = new Client(numberOfTcpConnectionsInt);
 		clientManager.start();
 		
 	}

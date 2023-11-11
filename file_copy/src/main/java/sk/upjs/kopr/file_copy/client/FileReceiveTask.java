@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
+import sk.upjs.kopr.file_copy.Constants;
 import sk.upjs.kopr.file_copy.FileRequest;
 
 public class FileReceiveTask implements Runnable {
@@ -26,18 +27,19 @@ public class FileReceiveTask implements Runnable {
     public void run() {
         try {
             ois = new ObjectInputStream(socket.getInputStream());
-
             while (true) {
+                // treba ukoncit while cyklus
 
                 String fileName = ois.readUTF();
                 System.out.println("fileName: " + fileName);
 
-                if (fileName.equals("END")) {
+                if (fileName.equals(Constants.POISON_PILL.getName())) {
+                    System.out.println("POISON PILL, KONCIM CYKLUS");
                     break;
                 }
 
                 File file = new File(TO_DIR + "\\" + fileName);
-                System.out.println("file: " + file.getPath());
+                //System.out.println("file: " + file.getPath());
 
 
                 if (!dataFromClient.containsKey(file.getName())) {
@@ -46,8 +48,6 @@ public class FileReceiveTask implements Runnable {
                     offset = dataFromClient.get(file.getName());
                 }
 
-                // i dont want to create parent dir for main dir in constants.FROM_DIR
-                
                 File parent = file.getParentFile();
                 if (!parent.exists()) {
                     parent.mkdirs();
@@ -58,10 +58,10 @@ public class FileReceiveTask implements Runnable {
                 long fileSize = ois.readLong();
 
                 raf.setLength(fileSize);
-                System.out.println("fileSize: " + fileSize);
+                //System.out.println("fileSize: " + fileSize);
 
                 byte[] receivedData = new byte[BUFFER_SIZE];
-                raf.seek(0); // offset
+                raf.seek(offset); // offset
 
                 int readBytes = 0;
 
@@ -81,10 +81,19 @@ public class FileReceiveTask implements Runnable {
 
                 }
                 raf.close();
-
+                System.out.println("file: " + file.getPath() + " bol stiahnuty" + " cez vlakno: " + Thread.currentThread().getName());
+                // ulozit vsetko co uz mam
             }
+            System.out.println("koniec cyklu, mam vsetko stiahnute, zatvaram socket");
+
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
+        } finally {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

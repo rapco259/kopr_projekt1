@@ -16,18 +16,16 @@ public class Client extends Service<Boolean>{
 
 	private ObjectOutputStream oos;
 	private ObjectInputStream ois;
-	private int numberOfTpcConnections;
+	public final int numberOfTpcConnections;
 	private ConcurrentHashMap<String, Long> dataFromClient;
 	private ExecutorService executor;
 	
-	public Client() {
+	public Client(int numberOfTpcConnections) {
 		savedData();
-		this.executor = Executors.newCachedThreadPool();
-	}
-	
-	public void setNumberOfTcpConnetions(int numberOfTpcConnections) {
+		this.executor = Executors.newFixedThreadPool(numberOfTpcConnections);
 		this.numberOfTpcConnections = numberOfTpcConnections;
 	}
+
 
 	public void savedData() {
 		dataFromClient = new ConcurrentHashMap<>();
@@ -47,13 +45,15 @@ public class Client extends Service<Boolean>{
 
 				//oos.writeUTF("START");
 
-				FileSearcherClient fileSearcherClient = new FileSearcherClient(new File(Constants.FROM_DIR), dataFromClient);
+				FileSearcherClient fileSearcherClient = new FileSearcherClient(new File(Constants.TO_DIR), dataFromClient);
+
+				fileSearcherClient.run();
+
+				System.out.println("dataFromClient: " + dataFromClient);
 
 				oos.writeObject(dataFromClient);
 				oos.writeInt(numberOfTpcConnections);
 				oos.flush();
-				
-				// to netreba ci ?
 
 				connectToServer();
 

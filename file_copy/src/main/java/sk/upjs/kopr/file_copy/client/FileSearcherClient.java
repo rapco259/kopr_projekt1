@@ -1,5 +1,7 @@
 package sk.upjs.kopr.file_copy.client;
 
+import sk.upjs.kopr.file_copy.Constants;
+
 import java.io.File;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,7 +29,7 @@ public class FileSearcherClient {
             if (dir[i].isDirectory()) {
                 search(dir[i].listFiles());
             } else {
-                clientFiles.put(dir[i].getPath(), dir[i].length());
+                clientFiles.put(dir[i].getPath().substring(Constants.TO_DIR.lastIndexOf('\\') + 1), dir[i].length());
             }
         }
     }
