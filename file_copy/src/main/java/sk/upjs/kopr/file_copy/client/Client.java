@@ -1,5 +1,6 @@
 package sk.upjs.kopr.file_copy.client;
 
+import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
@@ -44,7 +45,11 @@ public class Client extends Service<Boolean>{
 				// zacinam stahovanie
 				// teraz spravim iba pre start
 
-				oos.writeUTF("START");
+				//oos.writeUTF("START");
+
+				FileSearcherClient fileSearcherClient = new FileSearcherClient(new File(Constants.FROM_DIR), dataFromClient);
+
+				oos.writeObject(dataFromClient);
 				oos.writeInt(numberOfTpcConnections);
 				oos.flush();
 				

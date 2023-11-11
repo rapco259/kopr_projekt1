@@ -46,6 +46,8 @@ public class FileReceiveTask implements Runnable {
                     offset = dataFromClient.get(file.getName());
                 }
 
+                // i dont want to create parent dir for main dir in constants.FROM_DIR
+                
                 File parent = file.getParentFile();
                 if (!parent.exists()) {
                     parent.mkdirs();

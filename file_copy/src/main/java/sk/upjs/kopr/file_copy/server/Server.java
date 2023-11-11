@@ -1,11 +1,9 @@
 package sk.upjs.kopr.file_copy.server;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
@@ -15,12 +13,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import sk.upjs.kopr.file_copy.Constants;
-import sk.upjs.kopr.file_copy.FileSearcher;
 
 public class Server {
 
 	private BlockingQueue<File> filesToSend;
 	private int TPC_CONNECTIONS;
+	private ConcurrentHashMap<String, Long> dataFromClient;
+	private ConcurrentHashMap<String, Long> serverFiles;
 
 	// PRECO STATIC ?????????????????????????
 	// vytvorenie lebo main je static
@@ -43,19 +42,21 @@ public class Server {
 				System.out.println("niekto sa napojil");
 				ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
 				ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-				ConcurrentHashMap<String, Long> dataFromClient = null;
+
+				dataFromClient = null;
 
 				// read dir with searcher
 
-				// action od clienta, zatial mi to netreba
-				String startOrContinue = ois.readUTF();
+				// action od clienta, zatial mi to netreba, treba mi mapu od clienta ze co uz ma
+				//String startOrContinue = ois.readUTF();
+				dataFromClient = (ConcurrentHashMap<String, Long>) ois.readObject();
 
 				TPC_CONNECTIONS = ois.readInt();
 
 				System.out.println(TPC_CONNECTIONS);
-				System.out.println(startOrContinue);
 
-				//dataFromClient = (ConcurrentHashMap<String, Long>) ois.readObject();
+				// print out dataFromClient with files and their sizes
+				System.out.println(dataFromClient);
 
 				// prijmem mapu, bud je prazdna, alebo tam nieco je
 				// ak je pradzna tak este som nic nestiahol zo servera
@@ -90,9 +91,11 @@ public class Server {
 
 		filesToSend = new LinkedBlockingQueue<>();
 
-		FileSearcher fileSearcher = new FileSearcher(rootDir, filesToSend);
+		serverFiles = new ConcurrentHashMap<>();
+
+		FileSearcherServer fileSearcherServer = new FileSearcherServer(rootDir, filesToSend);
 		
-		fileSearcher.run();
+		fileSearcherServer.run();
 		
 
 	}
