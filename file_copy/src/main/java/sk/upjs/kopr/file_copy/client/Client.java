@@ -92,7 +92,11 @@ public class Client extends Service<Boolean>{
 			}
 			
 		}
+		System.out.println("vypinam executor !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		executor.shutdown();
+		System.out.println("TERAZ SOM HO VYPOL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		clientSocket.close();
+		System.out.println("koncim uplne vsetko");
+
 	}
 }

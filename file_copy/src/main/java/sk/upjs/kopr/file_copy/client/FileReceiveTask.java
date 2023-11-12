@@ -40,10 +40,10 @@ public class FileReceiveTask implements Runnable {
                 File file = new File(TO_DIR + "\\" + fileName);
                 //System.out.println("file: " + file.getPath());
 
-//                System.out.println("dataFromClient: " + dataFromClient.toString());
-//                System.out.println("fileName: " + file.getAbsoluteFile());
-//                System.out.println("fileName: " + file.getAbsoluteFile().toString());
-//                System.out.println(file.getPath().substring(Constants.TO_DIR.lastIndexOf('\\') + 1));
+                System.out.println("dataFromClient: " + dataFromClient.toString());
+                System.out.println("fileName: " + file.getAbsoluteFile());
+                System.out.println("fileName: " + file.getAbsoluteFile().toString());
+                System.out.println(file.getPath().substring(Constants.TO_DIR.lastIndexOf('\\') + 1));
 
                 if (!dataFromClient.containsKey(file.getPath().substring(Constants.TO_DIR.lastIndexOf('\\') + 1))) {
                     offset = 0;
@@ -95,8 +95,9 @@ public class FileReceiveTask implements Runnable {
 
                 }
             }
-            System.out.println("koniec cyklu, mam vsetko stiahnute, zatvaram socket");
-
+            /*System.out.println("koniec cyklu, mam vsetko stiahnute, zatvaram socket");
+            ois.close();
+            socket.close();*/
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -109,5 +110,4 @@ public class FileReceiveTask implements Runnable {
             }
         }
     }
-
 }

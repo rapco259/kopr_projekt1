@@ -91,6 +91,16 @@ public class FileSendTask implements Runnable {
             // tu bolo toto moje pod tym
             // chcem ukoncit vlakna a zavriet starter aspon
 
+            /*System.out.println("poslal som vsetky subory ktore som mal vo vlakne: " + Thread.currentThread().getName());
+
+            oos.writeUTF("poison.pill");
+            System.out.println("posielam poison.pill cez vlakno " + Thread.currentThread().getName());
+            oos.flush();
+
+            // moje
+            oos.close();
+            socket.close();*/
+
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         } finally {
