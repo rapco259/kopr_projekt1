@@ -37,7 +37,6 @@ public class Client extends Service<Boolean>{
 
 			@Override
 			protected Boolean call() throws Exception {
-				System.out.println("volam metodu call");
 				createConnection();
 
 				// if mam uz nejake data, ak mam tak pokracujem v stahovani, ak nemam tak
