@@ -27,8 +27,7 @@ public class FileSearcherServer {
             }
 
         } else {
-            // Exception
-
+            System.out.println("Nemam co poslat");
         }
     }
 

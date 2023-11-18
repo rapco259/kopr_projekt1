@@ -97,22 +97,23 @@ public class FileSendTask implements Runnable {
             System.out.println("posielam poison.pill cez vlakno " + Thread.currentThread().getName());
             oos.flush();
 
-            // moje
+            // tu
             oos.close();
             socket.close();*/
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
+            System.out.println("Spojenie sa ukoncilo");
         } finally {
             try {
-                // moje
+                // tu
                 System.out.println("poslal som vsetky subory ktore som mal vo vlakne: " + Thread.currentThread().getName());
 
                 oos.writeUTF("poison.pill");
                 System.out.println("posielam poison.pill cez vlakno " + Thread.currentThread().getName());
                 oos.flush();
 
-                // moje
+                // tu
                 oos.close();
                 socket.close();
 

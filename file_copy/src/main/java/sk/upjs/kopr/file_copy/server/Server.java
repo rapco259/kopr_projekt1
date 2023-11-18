@@ -81,6 +81,7 @@ public class Server {
 
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
+			System.out.println("Server zlyhal");
 		}
 	}
 	public void getAllFilesToSend(File rootDir) {
