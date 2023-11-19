@@ -6,6 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -21,11 +22,13 @@ public class Client extends Service<Boolean>{
 	private ConcurrentHashMap<String, Long> dataFromClient;
 	private ExecutorService executor;
 	private Socket clientSocket;
+	private CountDownLatch latch;
 	
-	public Client(int numberOfTpcConnections) {
+	public Client(int numberOfTpcConnections, CountDownLatch latch) {
 		savedData();
 		this.executor = Executors.newFixedThreadPool(numberOfTpcConnections);
 		this.numberOfTpcConnections = numberOfTpcConnections;
+		this.latch = latch;
 	}
 
 	public void savedData() {
@@ -34,9 +37,10 @@ public class Client extends Service<Boolean>{
 
 	protected Task<Boolean> createTask() {
 		return new Task<Boolean>() {
-
 			@Override
 			protected Boolean call() throws Exception {
+
+
 				createConnection();
 
 				// if mam uz nejake data, ak mam tak pokracujem v stahovani, ak nemam tak
@@ -49,13 +53,19 @@ public class Client extends Service<Boolean>{
 
 				fileSearcherClient.run();
 
-				System.out.println("dataFromClient: " + dataFromClient);
+				//System.out.println("dataFromClient: " + dataFromClient);
 
 				oos.writeObject(dataFromClient);
 				oos.writeInt(numberOfTpcConnections);
 				oos.flush();
 
 				connectToServer();
+
+				try {
+					latch.await();
+				} catch (InterruptedException e) {
+					executor.shutdownNow();
+				}
 
 				return true;
 			}
@@ -72,30 +82,30 @@ public class Client extends Service<Boolean>{
 			System.out.println("som napojeny");
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			System.out.println("nepodarilo sa pripojit na server");
 		}
+
 	}
 
 	public void connectToServer() throws IOException {
 		
 		for (int i = 0; i < numberOfTpcConnections; i++) {
-			
 			try {
 				Socket socket = new Socket(Constants.SERVER_HOST, Constants.SERVER_PORT);
 				System.out.println("pripajam na server");
-				FileReceiveTask task = new FileReceiveTask(Constants.TO_DIR, socket, dataFromClient);
+				FileReceiveTask task = new FileReceiveTask(Constants.TO_DIR, socket, dataFromClient, latch);
 				executor.execute(task);
-
 			} catch (Exception e) {
 				// TODO: handle exception
+				System.out.println("nepodarilo sa pripojit na server");
 			}
-			
 		}
+		oos.close();
+		ois.close();
 		System.out.println("vypinam executor !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		executor.shutdown();
 		System.out.println("TERAZ SOM HO VYPOL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		clientSocket.close();
 		System.out.println("koncim uplne vsetko");
-
 	}
 }

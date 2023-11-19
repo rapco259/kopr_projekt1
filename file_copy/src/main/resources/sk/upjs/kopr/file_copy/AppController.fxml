@@ -16,17 +16,12 @@
       </Label>
       <ProgressBar fx:id="countProgressBar" layoutX="150.0" layoutY="188.0" prefHeight="25.0" prefWidth="302.0" progress="0.0" />
       <ProgressBar fx:id="sizeProgressBar" layoutX="150.0" layoutY="263.0" prefHeight="25.0" prefWidth="302.0" progress="0.0" />
-      <Button fx:id="startButton" alignment="CENTER" layoutX="33.0" layoutY="336.0" mnemonicParsing="false" onAction="#startButtonClicked" prefHeight="31.0" prefWidth="83.0" text="Start">
+      <Button fx:id="startButton" alignment="CENTER" layoutX="109.0" layoutY="336.0" mnemonicParsing="false" onAction="#startButtonClicked" prefHeight="31.0" prefWidth="83.0" text="Start">
          <font>
             <Font size="15.0" />
          </font>
       </Button>
-      <Button fx:id="pauseButton" layoutX="246.0" layoutY="336.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="83.0" text="Pause">
-         <font>
-            <Font size="15.0" />
-         </font>
-      </Button>
-      <Button fx:id="continueButton" layoutX="452.0" layoutY="336.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="83.0" text="Continue">
+      <Button fx:id="pauseButton" layoutX="411.0" layoutY="336.0" mnemonicParsing="false" onAction="#pauseButtonClicked" prefHeight="31.0" prefWidth="83.0" text="Pause">
          <font>
             <Font size="15.0" />
          </font>

@@ -2,11 +2,10 @@ package sk.upjs.kopr.file_copy.client;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 
 import sk.upjs.kopr.file_copy.Constants;
-import sk.upjs.kopr.file_copy.FileRequest;
 
 public class FileReceiveTask implements Runnable {
     private String TO_DIR;
@@ -14,12 +13,14 @@ public class FileReceiveTask implements Runnable {
     private ConcurrentHashMap<String, Long> dataFromClient;
     private long offset;
     private ObjectInputStream ois;
+    private CountDownLatch latch;
 
 
-    public FileReceiveTask(String TO_DIR, Socket socket, ConcurrentHashMap<String, Long> dataFromClient) throws IOException {
+    public FileReceiveTask(String TO_DIR, Socket socket, ConcurrentHashMap<String, Long> dataFromClient, CountDownLatch latch) throws IOException {
         this.TO_DIR = TO_DIR;
         this.socket = socket;
         this.dataFromClient = dataFromClient;
+        this.latch = latch;
     }
 
     @Override
@@ -30,27 +31,27 @@ public class FileReceiveTask implements Runnable {
                 // treba ukoncit while cyklus
 
                 String fileName = ois.readUTF();
-                System.out.println("fileName: " + fileName);
+                //System.out.println("fileName: " + fileName);
 
                 if (fileName.equals(Constants.POISON_PILL.getName())) {
-                    System.out.println("CLIENTOVE VLAKNO DOSTALO POISON PILL, KONCIM CYKLUS");
+                    //System.out.println("CLIENTOVE VLAKNO DOSTALO POISON PILL, KONCIM CYKLUS");
                     break;
                 }
 
                 File file = new File(TO_DIR + "\\" + fileName);
                 //System.out.println("file: " + file.getPath());
 
-                System.out.println("dataFromClient: " + dataFromClient.toString());
-                System.out.println("fileName: " + file.getAbsoluteFile());
-                System.out.println("fileName: " + file.getAbsoluteFile().toString());
+                //System.out.println("dataFromClient: " + dataFromClient.toString());
+                //System.out.println("fileName: " + file.getAbsoluteFile());
+                //System.out.println("fileName: " + file.getAbsoluteFile().toString());
                 System.out.println(file.getPath().substring(Constants.TO_DIR.lastIndexOf('\\') + 1));
 
                 if (!dataFromClient.containsKey(file.getPath().substring(Constants.TO_DIR.lastIndexOf('\\') + 1))) {
                     offset = 0;
-                    System.out.println("tento subor este nemam: " + file.getName());
+                    //System.out.println("tento subor este nemam: " + file.getName());
                 } else {
                     offset = dataFromClient.get(file.getPath().substring(Constants.TO_DIR.lastIndexOf('\\') + 1));
-                    System.out.println("tento subor uz mam s offsetom: " + offset + " a jeho dlzka je " + file.length());
+                    //System.out.println("tento subor uz mam s offsetom: " + offset + " a jeho dlzka je " + file.length());
                 }
 
                 File parent = file.getParentFile();
@@ -95,9 +96,9 @@ public class FileReceiveTask implements Runnable {
 
                 }
             }
-            /*System.out.println("koniec cyklu, mam vsetko stiahnute, zatvaram socket");
-            ois.close();
-            socket.close();*/
+            //System.out.println("koniec cyklu, mam vsetko stiahnute, zatvaram socket");
+            //ois.close();
+            //socket.close();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -105,6 +106,7 @@ public class FileReceiveTask implements Runnable {
                 System.out.println("zatvaram socket V FILERECEIVETASK");
                 ois.close();
                 socket.close();
+                latch.countDown();
             } catch (IOException e) {
                 e.printStackTrace();
             }

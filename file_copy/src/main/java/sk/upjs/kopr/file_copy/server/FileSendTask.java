@@ -4,13 +4,8 @@ import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
-import sk.upjs.kopr.file_copy.AppController;
 import sk.upjs.kopr.file_copy.Constants;
-import sk.upjs.kopr.file_copy.FileInfo;
-import sk.upjs.kopr.file_copy.FileRequest;
-import sk.upjs.kopr.file_copy.client.Client;
 
 public class FileSendTask implements Runnable {
     //16384
@@ -43,17 +38,17 @@ public class FileSendTask implements Runnable {
 
                 fileName = file.getPath().substring(Constants.FROM_DIR.lastIndexOf('\\') + 1);
 
-                System.out.println("fileName: " + fileName + "datafromclient: " + dataFromClient.toString());
+                //System.out.println("fileName: " + fileName + "datafromclient: " + dataFromClient.toString());
 
                 if (dataFromClient == null || !dataFromClient.containsKey(fileName)) {
-                    System.out.println("tento subor este nemam: " + fileName);
+                    //System.out.println("tento subor este nemam: " + fileName);
                     offset = 0;
                 } else {
                     offset = dataFromClient.get(fileName);
-                    System.out.println("tento subor uz mam s offsetom: " + offset + " a jeho dlzka je " + file.length());
+                    //System.out.println("tento subor uz mam s offsetom: " + offset + " a jeho dlzka je " + file.length());
                     if (offset == file.length()) {
                         file = fileToSend.take();
-                        System.out.println("PRESKAKUJEM: " + fileName + " cez vlakno: " + Thread.currentThread().getName());
+                        //System.out.println("PRESKAKUJEM: " + fileName + " cez vlakno: " + Thread.currentThread().getName());
                         continue;
                     }
                 }
@@ -70,12 +65,12 @@ public class FileSendTask implements Runnable {
                 raf.seek(offset);
 
                 while (offset < fileSize) {
-                    System.out.println("offset: " + offset);
+                    //System.out.println("offset: " + offset);
                     if (fileSize - offset < buffer.length) {
                         buffer = new byte[(int) (fileSize - offset)];
                     }
                     offset += raf.read(buffer);
-                    System.out.println("zvacsujem offset: " + offset);
+                    //System.out.println("zvacsujem offset: " + offset);
                     oos.write(buffer);
 
                 }
@@ -102,8 +97,7 @@ public class FileSendTask implements Runnable {
             socket.close();*/
 
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            System.out.println("Spojenie sa ukoncilo");
+            System.out.println("Spojenie s clientom sa nahle ukoncilo alebo sa neposlal subor");
         } finally {
             try {
                 // tu
@@ -118,10 +112,8 @@ public class FileSendTask implements Runnable {
                 socket.close();
 
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Spojenie s clientom sa nahle ukoncilo");
             }
         }
-
-
     }
 }
