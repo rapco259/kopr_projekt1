@@ -67,6 +67,12 @@ public class Client extends Service<Boolean>{
 					executor.shutdownNow();
 				}
 
+				oos.close();
+				ois.close();
+				executor.shutdown();
+				clientSocket.close();
+				System.out.println("koncim uplne vsetko");
+
 				return true;
 			}
 
@@ -100,12 +106,6 @@ public class Client extends Service<Boolean>{
 				System.out.println("nepodarilo sa pripojit na server");
 			}
 		}
-		oos.close();
-		ois.close();
-		System.out.println("vypinam executor !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-		executor.shutdown();
-		System.out.println("TERAZ SOM HO VYPOL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-		clientSocket.close();
-		System.out.println("koncim uplne vsetko");
+
 	}
 }
