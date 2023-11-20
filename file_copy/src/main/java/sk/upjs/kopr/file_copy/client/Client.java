@@ -73,6 +73,7 @@ public class Client extends Service<Boolean>{
 				clientSocket.close();
 				System.out.println("koncim uplne vsetko");
 
+
 				return true;
 			}
 
